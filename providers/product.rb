@@ -28,7 +28,7 @@ action :install do
     cmd = "#{webpicmdline} /products:#{@new_resource.product_id} /suppressreboot"
     cmd << " /accepteula" if @new_resource.accept_eula
     shell_out!(cmd, {:returns => [0,42]})
-    @new_resource.updated_by_last_action(true)
+    new_resource.updated_by_last_action(true)
     Chef::Log.info("#{@new_resource} added new product '#{@new_resource.product_id}'")
   else
     Chef::Log.debug("#{@new_resource} product already exists - nothing to do")
