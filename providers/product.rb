@@ -32,9 +32,22 @@ action :install do
     cmd << " /accepteula" if @new_resource.accept_eula
     cmd << " /XML:#{node['webpi']['xmlpath']}" if node['webpi']['xmlpath']
     cmd << " /Log:#{node['webpi']['log']}"
-    shell_out!(cmd, {:returns => [0,42]})
+    out = shell_out!(cmd, {:returns => [0,42,3010]})
     @new_resource.updated_by_last_action(true)
     Chef::Log.info("#{@new_resource} added new product '#{@install_list}'")
+    if out.exitstatus == 3010
+      # reboot required
+      # see https://github.com/chef/chef/blob/master/lib/chef/provider/reboot.rb
+      #     http://stackoverflow.com/questions/30535470/how-can-i-call-a-chef-resource-from-an-hwrp
+      Chef::Log.warn "Rebooting system immediately, requested by '#{@new_resource.name}'"
+      node.run_context.request_reboot(
+          :delay_mins => 0,
+          :reason => "WebPI installer requested reboot",
+          :timestamp => Time.now,
+          :requested_by => @new_resource.name
+      )
+      throw :end_client_run_early
+    end
   else
     Chef::Log.debug("#{@new_resource} product already exists - nothing to do")
   end
